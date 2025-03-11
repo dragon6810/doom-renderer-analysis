@@ -391,6 +391,13 @@ static void R_AddLine (seg_t *line)
   angle_t  tspan;
   static sector_t tempsec;     // killough 3/8/98: ceiling/water hack
 
+  #if 0
+    if(line->linedef - lines != 46)
+      return;
+  #endif
+
+  puts("line here");
+
   curline = line;
 
   if (V_IsOpenGLMode())
@@ -832,6 +839,11 @@ static void R_Subsector(int num)
     I_Error ("R_Subsector: ss %i with numss = %i", num, numsubsectors);
 #endif
 
+  #if 1
+    if(num != 76)
+      return;
+  #endif
+
   sub = &subsectors[num];
   currentsubsectornum = num;
 
@@ -868,6 +880,7 @@ static void R_Subsector(int num)
   line = &segs[sub->firstline];
   while (count--)
   {
+    printf("cur: %d.\n", sub - subsectors);
     if (line->linedef)
       R_AddLine (line);
     line++;

@@ -566,5 +566,6 @@ extern dboolean clearscreen;
 extern dboolean doplanes;
 extern dboolean domasked;
 extern dboolean dofog;
+extern dboolean dolight;
 
 #endif          // __DOOMDEF__

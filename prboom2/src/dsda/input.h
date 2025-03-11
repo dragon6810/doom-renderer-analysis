@@ -216,6 +216,7 @@ typedef enum {
   dsda_input_toggledoplanes,
   dsda_input_toggledomasked,
   dsda_input_toggledofog,
+  dsda_input_toggledolight,
 
   DSDA_INPUT_IDENTIFIER_COUNT
 } dsda_input_identifier_t;

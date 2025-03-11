@@ -57,3 +57,4 @@ dboolean clearscreen = false;
 dboolean doplanes = true;
 dboolean domasked = true;
 dboolean dofog = true;
+dboolean dolight = true;;

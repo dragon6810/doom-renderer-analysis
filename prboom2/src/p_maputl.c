@@ -672,6 +672,8 @@ dboolean PIT_AddLineIntercepts(line_t *ld)
   if (s1 == s2)
     return true;        // line isn't crossed
 
+  printf("hit line %d.\n", ld - lines);
+
   // hit the line
   P_MakeDivline(ld, &dl);
   frac = P_InterceptVector(&trace, &dl);

@@ -579,7 +579,7 @@ void G_BuildTiccmd(ticcmd_t* cmd)
   */
 
   if(dsda_InputTickActivated(dsda_input_toggleclearscreen))
-      clearscreen = !clearscreen;
+    clearscreen = !clearscreen;
 
   if(dsda_InputTickActivated(dsda_input_toggledoplanes))
     doplanes = !doplanes;
@@ -589,6 +589,9 @@ void G_BuildTiccmd(ticcmd_t* cmd)
 
   if(dsda_InputTickActivated(dsda_input_toggledofog))
     dofog = !dofog;
+
+  if(dsda_InputTickActivated(dsda_input_toggledolight))
+    dolight = !dolight;
 
   if (raven)
   {

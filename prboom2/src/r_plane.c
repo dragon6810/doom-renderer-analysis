@@ -208,15 +208,16 @@ static void R_MapPlane(int y, int x1, int x2, draw_span_vars_t *dsvars)
   dsvars->xfrac = FixedMul(dsvars->xfrac, dsvars->xscale);
   dsvars->yfrac = FixedMul(dsvars->yfrac, dsvars->yscale);
 
-  if(!dofog)
-    distance = 0;
-
   if (!(dsvars->colormap = fixedcolormap))
   {
     dsvars->z = distance;
     index = distance >> LIGHTZSHIFT;
     if (index >= MAXLIGHTZ )
       index = MAXLIGHTZ-1;
+
+    if(!dofog)
+      index = 0;
+    
     dsvars->colormap = dsvars->planezlight[index];
   }
   else

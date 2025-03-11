@@ -577,6 +577,7 @@ cfg_input_def_t input_defs[] = {
   INPUT_SETTING("input_toggledoplanes", dsda_input_toggledoplanes, 'p', -1, -1),
   INPUT_SETTING("input_toggledomasked", dsda_input_toggledomasked, 'm', -1, -1),
   INPUT_SETTING("input_toggledofog", dsda_input_toggledofog, 'f', -1, -1),
+  INPUT_SETTING("input_toggledolight", dsda_input_toggledolight, 'l', -1, -1),
 };
 
 static int input_def_count = sizeof(input_defs) / sizeof(input_defs[0]);

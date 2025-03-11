@@ -54,7 +54,6 @@ int WIDE_SCREENHEIGHT = 200;
 */
 
 dboolean clearscreen = false;
-dboolean toggledclearscreen = false;
-
 dboolean doplanes = true;
-dboolean toggleddoplanes = false;
+dboolean domasked = true;
+dboolean dofog = true;

@@ -1102,7 +1102,7 @@ void R_RenderPlayerView (player_t* player)
 
   FakeNetUpdate();
 
-  if (V_IsSoftwareMode()) {
+  if (V_IsSoftwareMode() && domasked) {
     DSDA_ADD_CONTEXT(sf_draw_masked);
     R_DrawMasked ();
     R_ResetColumnBuffer();

@@ -911,6 +911,8 @@ static void R_ProjectSprite (mobj_t* thing, int lightlevel)
       int index = (int)(((int64_t)xscale * 160 / wide_centerx) >> LIGHTSCALESHIFT);
       if (index >= MAXLIGHTSCALE)
         index = MAXLIGHTSCALE - 1;
+      if(!dofog)
+        index = MAXLIGHTSCALE - 1;
       vis->colormap = spritelights[index];
     }
 
@@ -1526,6 +1528,7 @@ static void R_DrawSprite (vissprite_t* spr)
 
   mfloorclip = clipbot;
   mceilingclip = cliptop;
+  
   R_DrawVisSprite (spr);
 }
 

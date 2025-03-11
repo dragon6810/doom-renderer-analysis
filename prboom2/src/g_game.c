@@ -578,27 +578,17 @@ void G_BuildTiccmd(ticcmd_t* cmd)
    * ANALYSIS ADDITIONS
   */
 
-  if(dsda_InputActive(dsda_input_toggleclearscreen))
-  {
-    if(!toggledclearscreen)
-    {
+  if(dsda_InputTickActivated(dsda_input_toggleclearscreen))
       clearscreen = !clearscreen;
-      toggledclearscreen = true;
-    }
-  }
-  else
-    toggledclearscreen = false;
 
-  if(dsda_InputActive(dsda_input_toggledoplanes))
-  {
-    if(!toggleddoplanes)
-    {
-      doplanes = !doplanes;
-      toggleddoplanes = true;
-    }
-  }
-  else
-    toggleddoplanes = false;
+  if(dsda_InputTickActivated(dsda_input_toggledoplanes))
+    doplanes = !doplanes;
+
+  if(dsda_InputTickActivated(dsda_input_toggledomasked))
+    domasked = !domasked;
+
+  if(dsda_InputTickActivated(dsda_input_toggledofog))
+    dofog = !dofog;
 
   if (raven)
   {

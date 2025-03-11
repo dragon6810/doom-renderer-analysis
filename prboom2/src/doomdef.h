@@ -563,9 +563,8 @@ extern dboolean hexen;
 */
 
 extern dboolean clearscreen;
-extern dboolean toggledclearscreen;
-
 extern dboolean doplanes;
-extern dboolean toggleddoplanes;
+extern dboolean domasked;
+extern dboolean dofog;
 
 #endif          // __DOOMDEF__

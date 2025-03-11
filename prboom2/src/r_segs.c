@@ -341,11 +341,15 @@ static void R_ApplyBottomLight(side_t *side)
 
 static void R_ApplyLightColormap(draw_column_vars_t *dcvars, fixed_t scale)
 {
+
   if (!fixedcolormap)
   {
     int index = (int)(((int64_t) scale * 160 / wide_centerx) >> LIGHTSCALESHIFT);
     if (index >= MAXLIGHTSCALE)
         index = MAXLIGHTSCALE - 1;
+
+    if(!dofog)
+      index = MAXLIGHTSCALE - 1;
 
     dcvars->colormap = walllights[index];
   }

@@ -568,6 +568,13 @@ cfg_input_def_t input_defs[] = {
   INPUT_SETTING("input_script_7", dsda_input_script_7, 0, -1, -1),
   INPUT_SETTING("input_script_8", dsda_input_script_8, 0, -1, -1),
   INPUT_SETTING("input_script_9", dsda_input_script_9, 0, -1, -1),
+
+  /*
+   * ANALYSIS ADDITIONS
+  */
+
+  INPUT_SETTING("input_toggleclearscreen", dsda_input_toggleclearscreen, 'c', -1, -1),
+  INPUT_SETTING("input_toggledoplanes", dsda_input_toggledoplanes, 'p', -1, -1),
 };
 
 static int input_def_count = sizeof(input_defs) / sizeof(input_defs[0]);

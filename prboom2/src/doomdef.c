@@ -48,3 +48,13 @@ int SCREENPITCH=320;
 int SCREEN_320x200;
 int WIDE_SCREENWIDTH = 320;
 int WIDE_SCREENHEIGHT = 200;
+
+/*
+ * ANALYSIS ADDITIONS
+*/
+
+dboolean clearscreen = false;
+dboolean toggledclearscreen = false;
+
+dboolean doplanes = true;
+dboolean toggleddoplanes = false;

@@ -574,6 +574,32 @@ void G_BuildTiccmd(ticcmd_t* cmd)
   if (dsda_InputActive(dsda_input_strafeleft))
     side -= sidemove[speed];
 
+  /*
+   * ANALYSIS ADDITIONS
+  */
+
+  if(dsda_InputActive(dsda_input_toggleclearscreen))
+  {
+    if(!toggledclearscreen)
+    {
+      clearscreen = !clearscreen;
+      toggledclearscreen = true;
+    }
+  }
+  else
+    toggledclearscreen = false;
+
+  if(dsda_InputActive(dsda_input_toggledoplanes))
+  {
+    if(!toggleddoplanes)
+    {
+      doplanes = !doplanes;
+      toggleddoplanes = true;
+    }
+  }
+  else
+    toggleddoplanes = false;
+
   if (raven)
   {
     int lspeed;

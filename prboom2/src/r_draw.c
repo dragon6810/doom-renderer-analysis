@@ -608,3 +608,22 @@ void R_CheckFuzzCol(int x, int height)
   if (!(x % fuzzcellsize))
     R_ResetFuzzCol(height);
 }
+
+//
+// R_ClearScreen
+// Clears the entire framebuffer to black
+// More precisely, the first color of the colormap
+//
+
+void R_ClearScreen(void)
+{
+  unsigned count = SCREENWIDTH * SCREENHEIGHT;
+  const byte *colormap = colormaps[0];
+  byte *dest = drawvars.topleft;
+
+  while (count) 
+  {
+    *dest++ = colormap[0];
+    count--;
+  }
+}

@@ -558,4 +558,14 @@ typedef enum
 
 extern dboolean hexen;
 
+/*
+ * ANALYSIS ADDITIONS
+*/
+
+extern dboolean clearscreen;
+extern dboolean toggledclearscreen;
+
+extern dboolean doplanes;
+extern dboolean toggleddoplanes;
+
 #endif          // __DOOMDEF__

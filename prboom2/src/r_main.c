@@ -1089,7 +1089,7 @@ void R_RenderPlayerView (player_t* player)
 
   FakeNetUpdate();
 
-  if (V_IsSoftwareMode())
+  if (V_IsSoftwareMode() && doplanes)
   {
     DSDA_ADD_CONTEXT(sf_draw_planes);
     R_DrawPlanes();

@@ -354,6 +354,9 @@ void D_Display (fixed_t frac)
   dboolean wipe;
   dboolean viewactive = false, isborder = false;
 
+  if(clearscreen)
+    R_ClearScreen();
+
   // e6y
   if (dsda_SkipMode())
   {
@@ -482,7 +485,7 @@ void D_Display (fixed_t frac)
     R_RestoreInterpolations();
 
     DSDA_ADD_CONTEXT(sf_status_bar);
-    ST_Drawer(redrawborderstuff || BorderNeedRefresh);
+    /*ST_Drawer(redrawborderstuff || BorderNeedRefresh);*/
     DSDA_REMOVE_CONTEXT(sf_status_bar);
 
     BorderNeedRefresh = false;
@@ -490,7 +493,7 @@ void D_Display (fixed_t frac)
       R_DrawViewBorder();
 
     DSDA_ADD_CONTEXT(sf_hud);
-    HU_Drawer();
+    /*HU_Drawer();*/
     DSDA_REMOVE_CONTEXT(sf_hud);
   }
 

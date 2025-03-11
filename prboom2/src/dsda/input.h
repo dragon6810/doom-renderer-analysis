@@ -207,6 +207,14 @@ typedef enum {
   dsda_input_script_8,
   dsda_input_script_9,
   dsda_input_fps,
+
+  /* 
+   * ANALYSIS ADDITIONS
+  */
+
+  dsda_input_toggleclearscreen,
+  dsda_input_toggledoplanes,
+
   DSDA_INPUT_IDENTIFIER_COUNT
 } dsda_input_identifier_t;
 

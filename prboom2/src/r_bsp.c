@@ -381,6 +381,37 @@ static dboolean CheckClip(seg_t * seg, sector_t * frontsector, sector_t * backse
 
 static dboolean ignore_gl_range_clipping;
 
+static void R_DrawLine(seg_t *line, int x1, int x2)
+{
+  int x;
+
+  unsigned count = SCREENWIDTH * SCREENHEIGHT;
+  fixed_t y = SCREENHEIGHT >> 1 << FRACBITS;
+  const byte *colormap = colormaps[0];
+  byte *dest = drawvars.topleft;
+  fixed_t a1, a2, d1, d2, d, vx, vy;
+  fixed_t numer, denom, t;
+  fixed_t p1x, p1y, p2x, p2y;
+
+  vx = finecosine[viewangle >> ANGLETOFINESHIFT];
+  vy = finesine[viewangle >> ANGLETOFINESHIFT];
+
+  a1 = xtoviewangle[x1] + viewangle;
+  a2 = xtoviewangle[x2] + viewangle;
+
+  numer  = FixedMul(line->v1->px - viewx, -finesine[line->pangle >> ANGLETOFINESHIFT]);
+  numer += FixedMul(line->v1->py - viewy, finecosine[line->pangle >> ANGLETOFINESHIFT]);
+
+  d = FixedMul(vx, viewx) + FixedMul(vy, viewy);
+  d1 = FixedMul(line->v1->px, vx) + FixedMul(line->v1->py, vy) - d;
+  d2 = FixedMul(line->v2->px, vx) + FixedMul(line->v2->py, vy) - d;
+
+  for(x=x1; x<x2; x++)
+  {
+    dest[(y >> FRACBITS) * SCREENWIDTH + x] = colormap[4];
+  }
+}
+
 static void R_AddLine (seg_t *line)
 {
   int      x1;
@@ -396,76 +427,7 @@ static void R_AddLine (seg_t *line)
       return;
   #endif
 
-  puts("line here");
-
   curline = line;
-
-  if (V_IsOpenGLMode())
-  {
-    line_t* l = line->linedef;
-    sector_t* sec = subsectors[currentsubsectornum].sector;
-
-    // Don't add plane to drawing list until we encounter a
-    // non-self-referencing linedef in the subsector.
-    if (sec->gl_validcount != validcount && (l == NULL || l->frontsector != l->backsector))
-    {
-      sec->gl_validcount = validcount;
-
-      gld_AddPlane(currentsubsectornum, floorplane, ceilingplane);
-    }
-
-    angle1 = R_PointToPseudoAngle(line->v1->x, line->v1->y);
-    angle2 = R_PointToPseudoAngle(line->v2->x, line->v2->y);
-
-    // Back side, i.e. backface culling	- read: endAngle >= startAngle!
-    if (angle2 - angle1 < ANG180 || !line->linedef)
-    {
-      return;
-    }
-    if (!ignore_gl_range_clipping && !gld_clipper_SafeCheckRange(angle2, angle1))
-    {
-      return;
-    }
-
-    map_subsectors[currentsubsectornum] = 1;
-
-    if (!line->backsector)
-    {
-      gld_clipper_SafeAddClipRange(angle2, angle1);
-    }
-    else
-    {
-      if (line->frontsector == line->backsector)
-      {
-        if (texturetranslation[line->sidedef->midtexture] == NO_TEXTURE)
-        {
-          //e6y: nothing to do here!
-          return;
-        }
-      }
-      if (CheckClip(line, line->frontsector, line->backsector))
-      {
-        gld_clipper_SafeAddClipRange(angle2, angle1);
-      }
-    }
-
-    if (ds_p == drawsegs+maxdrawsegs)   // killough 1/98 -- fix 2s line HOM
-    {
-      unsigned pos = ds_p - drawsegs; // jff 8/9/98 fix from ZDOOM1.14a
-      unsigned newmax = maxdrawsegs ? maxdrawsegs*2 : 128; // killough
-      drawsegs = Z_Realloc(drawsegs,newmax*sizeof(*drawsegs));
-      ds_p = drawsegs + pos;          // jff 8/9/98 fix from ZDOOM1.14a
-      maxdrawsegs = newmax;
-    }
-
-    curline->linedef->flags |= ML_MAPPED;
-
-    // proff 11/99: the rest of the calculations is not needed for OpenGL
-    ds_p++->curline = curline;
-    gld_AddWall(curline);
-
-    return;
-  }
 
   angle1 = R_PointToAngleEx(line->v1->px, line->v1->py);
   angle2 = R_PointToAngleEx(line->v2->px, line->v2->py);
@@ -511,31 +473,13 @@ static void R_AddLine (seg_t *line)
   angle1 = (angle1+ANG90)>>ANGLETOFINESHIFT;
   angle2 = (angle2+ANG90)>>ANGLETOFINESHIFT;
 
-  // killough 1/31/98: Here is where "slime trails" can SOMETIMES occur:
   x1 = viewangletox[angle1];
   x2 = viewangletox[angle2];
 
-  // Does not cross a pixel?
-  if (x1 >= x2)       // killough 1/31/98 -- change == to >= for robustness
+  if (x1 >= x2)
     return;
 
-  backsector = line->backsector;
-
-  // Single sided line?
-  if (backsector)
-    // killough 3/8/98, 4/4/98: hack for invisible ceilings / deep water
-    backsector = R_FakeFlat(backsector, &tempsec, NULL, NULL, true);
-
-  /* cph - roll up linedef properties in flags */
-  if ((linedef = curline->linedef)->r_validcount != gametic)
-    R_RecalcLineFlags(linedef);
-
-  if (linedef->r_flags & RF_IGNORE)
-  {
-    return;
-  }
-  else
-    R_ClipWallSegment (x1, x2, linedef->r_flags & RF_CLOSED);
+  R_DrawLine(line, x1, x2);
 }
 
 //
@@ -828,6 +772,8 @@ static void R_AddPolyLines(polyobj_t *poly)
 
 static void R_Subsector(int num)
 {
+  int i;
+
   int         count;
   seg_t       *line;
   subsector_t *sub;
@@ -850,41 +796,16 @@ static void R_Subsector(int num)
   if (V_IsSoftwareMode() || sub->sector->gl_validcount != validcount)
   {
     R_UpdateGlobalPlanes(sub->sector, &floorlightlevel, &ceilinglightlevel);
-
-    // killough 9/18/98: Fix underwater slowdown, by passing real sector
-    // instead of fake one. Improve sprite lighting by basing sprite
-    // lightlevels on floor & ceiling lightlevels in the surrounding area.
-    //
-    // 10/98 killough:
-    //
-    // NOTE: TeamTNT fixed this bug incorrectly, messing up sprite lighting!!!
-    // That is part of the 242 effect!!!  If you simply pass sub->sector to
-    // the old code you will not get correct lighting for underwater sprites!!!
-    // Either you must pass the fake sector and handle validcount here, on the
-    // real sector, or you must account for the lighting in some other way,
-    // like passing it as an argument.
-
+    
     if (sub->sector->validcount != validcount)
-    {
       sub->sector->validcount = validcount;
-
-      R_AddSprites(sub, (floorlightlevel+ceilinglightlevel)/2);
-    }
   }
-
-  // hexen
-  if (sub->poly) // Render the polyobj in the subsector first
-    R_AddPolyLines(sub->poly);
 
   count = sub->numlines;
   line = &segs[sub->firstline];
-  while (count--)
+  for(i=0, line=&segs[sub->firstline]; i<sub->numlines; i++, line++)
   {
-    printf("cur: %d.\n", sub - subsectors);
-    if (line->linedef)
-      R_AddLine (line);
-    line++;
-    curline = NULL; /* cph 2001/11/18 - must clear curline now we're done with it, so R_ColourMap doesn't try using it for other things */
+    R_AddLine(line);
   }
 }
 
@@ -898,6 +819,8 @@ static void R_Subsector(int num)
 
 void R_RenderBSPNode(int bspnum)
 {
+  R_Subsector(76);
+
   while (!(bspnum & NF_SUBSECTOR))  // Found a subsector?
     {
       const node_t *bsp = &nodes[bspnum];

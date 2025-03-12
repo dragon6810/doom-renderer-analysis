@@ -385,18 +385,18 @@ static void R_DrawLine(seg_t *line, int x1, int x2)
 {
   int x, y;
 
-  unsigned count = SCREENWIDTH * SCREENHEIGHT;
   const byte *colormap = colormaps[0];
   byte *dest = drawvars.topleft;
   angle_t a1, a2;
-  fixed_t d1, d2, d, vx, vy;
+  fixed_t d1, d2, vx, vy;
   fixed_t numer, denom, t1, t2;
   fixed_t p1x, p1y, p2x, p2y;
   fixed_t lineheight, linebottom;
   fixed_t aspect, temp;
   fixed_t baseheight;
   angle_t hfov, vfov;
-  fixed_t l1, h1, l2, h2;
+  fixed_t l1, h1, l2, h2, lstep, hstep, l, h;
+  int il, ih;
 
   vx = finecosine[viewangle >> ANGLETOFINESHIFT];
   vy = finesine[viewangle >> ANGLETOFINESHIFT];
@@ -430,8 +430,6 @@ static void R_DrawLine(seg_t *line, int x1, int x2)
 
   // 1 unit to 1 pixel if the unit is 1 unit away
   baseheight = FixedMul(SCREENHEIGHT << FRACBITS, finetangent[((vfov>>1) + ANG90) >> ANGLETOFINESHIFT]) << 1;
-  printf("x1: %d\n", x1);
-  printf("x2: %d\n", x2);
 
   l1 = (SCREENHEIGHT >> 1 << FRACBITS) - FixedMul(baseheight, FixedDiv(linebottom, d1));
   l2 = (SCREENHEIGHT >> 1 << FRACBITS) - FixedMul(baseheight, FixedDiv(linebottom, d2));
@@ -439,21 +437,25 @@ static void R_DrawLine(seg_t *line, int x1, int x2)
   h1 = l1 - FixedMul(lineheight, FixedDiv(baseheight, d1));
   h2 = l2 - FixedMul(lineheight, FixedDiv(baseheight, d2));
 
-  if(h1 < 0)
-    h1 = 0;
-  if(l1 >= SCREENHEIGHT<<FRACBITS)
-    l1 = (SCREENHEIGHT-1)<<FRACBITS;
-  if(h2 < 0)
-    h2 = 0;
-  if(l2 >= SCREENHEIGHT<<FRACBITS)
-    l2 = (SCREENHEIGHT-1)<<FRACBITS;
+  lstep = FixedDiv(l2 - l1, (x2 - x1) << FRACBITS);
+  hstep = FixedDiv(h2 - h1, (x2 - x1) << FRACBITS);
 
   dest[0] = colormap[4];
 
-  for(x=x1, y=(h1>>FRACBITS); y<(l1>>FRACBITS); y++)
-    dest[y * SCREENWIDTH + x] = colormap[4];
-  for(x=x2-1, y=(h2>>FRACBITS); y<(l2>>FRACBITS); y++)
-    dest[y * SCREENWIDTH + x] = colormap[4];
+  for(x=x1, l=l1, h=h1; x<x2; x++, l+=lstep, h+=hstep)
+  {
+    il = l >> FRACBITS;
+    ih = h >> FRACBITS;
+    if(ih < 0)
+      ih = 0;
+    if(il >= SCREENHEIGHT)
+      il = SCREENHEIGHT - 1;
+
+    for(y=ih; y<il; y++)
+    {
+      dest[y * SCREENWIDTH + x] = colormap[4];
+    }
+  }
 }
 
 static void R_AddLine (seg_t *line)

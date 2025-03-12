@@ -425,7 +425,6 @@ static void R_InitTextureMapping (void)
       for (i=0; viewangletox[i] > x; i++)
         ;
       xtoviewangle[x] = (i<<ANGLETOFINESHIFT)-ANG90;
-      printf("xtoviewangle[%d] = %f\n", x, (float) xtoviewangle[x] / (float) 0xFFFFFFFF * 360.0);
 
       // [FG] linear horizontal sky scrolling
       angle = (0.5 - x / (double)viewwidth) * linearskyfactor;

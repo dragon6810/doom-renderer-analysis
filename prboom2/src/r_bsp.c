@@ -390,12 +390,27 @@ static void R_DrawLineCol(seg_t *line, int x, fixed_t l, fixed_t h, fixed_t d1, 
 
   fixed_t linelen;
   fixed_t u, v, vstep;
+  fixed_t px, py;
+  angle_t angle;
+  fixed_t numer, denom, t;
   int il, ih;
+  const rpatch_t *texpatch;
+  const byte *source;
 
+  angle = xtoviewangle[x] + viewangle;
   linelen  = FixedMul(line->v2->px - line->v1->px, finecosine[line->angle>>ANGLETOFINESHIFT]);
   linelen += FixedMul(line->v2->py - line->v1->py,   finesine[line->angle>>ANGLETOFINESHIFT]);
 
-  u = FixedDiv((x - x1) << FRACBITS, (x2 - x1) << FRACBITS);
+  numer  = FixedMul(line->v1->px - viewx, -finesine[line->pangle >> ANGLETOFINESHIFT]);
+  numer += FixedMul(line->v1->py - viewy, finecosine[line->pangle >> ANGLETOFINESHIFT]);
+  
+  denom = finesine[(angle - line->pangle) >> ANGLETOFINESHIFT];
+  t = FixedDiv(numer, denom);
+
+  px = FixedMul(finecosine[angle>>ANGLETOFINESHIFT], t) + viewx - line->v1->px;
+  py = FixedMul(finesine[angle>>ANGLETOFINESHIFT], t) + viewy - line->v1->py;
+
+  u = FixedMul(px, finecosine[line->pangle>>ANGLETOFINESHIFT]) + FixedMul(py, finesine[line->pangle>>ANGLETOFINESHIFT]);
   v = 0;
 
   vstep = FixedDiv(line->frontsector->ceilingheight - line->frontsector->floorheight, l - h);
@@ -404,16 +419,19 @@ static void R_DrawLineCol(seg_t *line, int x, fixed_t l, fixed_t h, fixed_t d1, 
   ih = h >> FRACBITS;
 
   if(ih < 0)
+  {
+    v += FixedMul(-h, vstep);
     ih = 0;
-  if(il >= SCREENHEIGHT)
-  {
-    v += FixedMul(l-(SCREENHEIGHT<<FRACBITS)+FRACUNIT, vstep);
-    il = SCREENHEIGHT-1;
   }
+  if(il >= SCREENHEIGHT)
+    il = SCREENHEIGHT-1;
 
-  for(y=il; y>=ih; y--, v+=vstep)
+  texpatch = R_TextureCompositePatchByNum(line->sidedef->midtexture);
+  source = R_GetTextureColumn(texpatch, u >> FRACBITS);
+
+  for(y=ih; y<=il; y++, v+=vstep)
   {
-    dest[y * SCREENWIDTH + x] = colormap[(v>>FRACBITS)%256];
+    dest[y * SCREENWIDTH + x] = colormap[source[v>>FRACBITS]];
   }
 }
 
@@ -875,7 +893,7 @@ static void R_Subsector(int num)
 
   count = sub->numlines;
   line = &segs[sub->firstline];
-  for(i=0, line=&segs[sub->firstline]; i<sub->numlines; i++, line++)
+  for(i=2, line=&segs[sub->firstline+2]; i<sub->numlines; i++, line++)
   {
     R_AddLine(line);
     break;

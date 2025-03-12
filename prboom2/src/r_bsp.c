@@ -381,6 +381,42 @@ static dboolean CheckClip(seg_t * seg, sector_t * frontsector, sector_t * backse
 
 static dboolean ignore_gl_range_clipping;
 
+static void R_DrawLineCol(seg_t *line, int x, fixed_t l, fixed_t h, fixed_t d1, fixed_t d2, int x1, int x2)
+{
+  int y;
+
+  const byte *colormap = colormaps[0];
+  byte *dest = drawvars.topleft;
+
+  fixed_t linelen;
+  fixed_t u, v, vstep;
+  int il, ih;
+
+  linelen  = FixedMul(line->v2->px - line->v1->px, finecosine[line->angle>>ANGLETOFINESHIFT]);
+  linelen += FixedMul(line->v2->py - line->v1->py,   finesine[line->angle>>ANGLETOFINESHIFT]);
+
+  u = FixedDiv((x - x1) << FRACBITS, (x2 - x1) << FRACBITS);
+  v = 0;
+
+  vstep = FixedDiv(line->frontsector->ceilingheight - line->frontsector->floorheight, l - h);
+
+  il = l >> FRACBITS;
+  ih = h >> FRACBITS;
+
+  if(ih < 0)
+    ih = 0;
+  if(il >= SCREENHEIGHT)
+  {
+    v += FixedMul(l-(SCREENHEIGHT<<FRACBITS)+FRACUNIT, vstep);
+    il = SCREENHEIGHT-1;
+  }
+
+  for(y=il; y>=ih; y--, v+=vstep)
+  {
+    dest[y * SCREENWIDTH + x] = colormap[(v>>FRACBITS)%256];
+  }
+}
+
 static void R_DrawLine(seg_t *line, int x1, int x2)
 {
   int x, y;
@@ -444,17 +480,7 @@ static void R_DrawLine(seg_t *line, int x1, int x2)
 
   for(x=x1, l=l1, h=h1; x<x2; x++, l+=lstep, h+=hstep)
   {
-    il = l >> FRACBITS;
-    ih = h >> FRACBITS;
-    if(ih < 0)
-      ih = 0;
-    if(il >= SCREENHEIGHT)
-      il = SCREENHEIGHT - 1;
-
-    for(y=ih; y<il; y++)
-    {
-      dest[y * SCREENWIDTH + x] = colormap[4];
-    }
+    R_DrawLineCol(line, x, l, h, d1, d2, x1, x2);
   }
 }
 

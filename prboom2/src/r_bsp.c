@@ -383,18 +383,20 @@ static dboolean ignore_gl_range_clipping;
 
 static void R_DrawLine(seg_t *line, int x1, int x2)
 {
-  int x;
+  int x, y;
 
   unsigned count = SCREENWIDTH * SCREENHEIGHT;
-  fixed_t y = SCREENHEIGHT >> 1 << FRACBITS;
   const byte *colormap = colormaps[0];
   byte *dest = drawvars.topleft;
-  fixed_t a1, a2, d1, d2, d, vx, vy;
+  angle_t a1, a2;
+  fixed_t d1, d2, d, vx, vy;
   fixed_t numer, denom, t1, t2;
   fixed_t p1x, p1y, p2x, p2y;
   fixed_t lineheight, linebottom;
   fixed_t aspect, temp;
+  fixed_t baseheight;
   angle_t hfov, vfov;
+  fixed_t l1, h1, l2, h2;
 
   vx = finecosine[viewangle >> ANGLETOFINESHIFT];
   vy = finesine[viewangle >> ANGLETOFINESHIFT];
@@ -404,16 +406,10 @@ static void R_DrawLine(seg_t *line, int x1, int x2)
 
   numer  = FixedMul(line->v1->px - viewx, -finesine[line->pangle >> ANGLETOFINESHIFT]);
   numer += FixedMul(line->v1->py - viewy, finecosine[line->pangle >> ANGLETOFINESHIFT]);
+  
   denom = finesine[(a1 - line->pangle) >> ANGLETOFINESHIFT];
-  // Line is parallel to angle
-  if(!denom)
-    return;
   t1 = FixedDiv(numer, denom);
-
   denom = finesine[(a2 - line->pangle) >> ANGLETOFINESHIFT];
-  // Line is parallel to angle
-  if(!denom)
-    return;
   t2 = FixedDiv(numer, denom);
   
   p1x = FixedMul(finecosine[a1 >> ANGLETOFINESHIFT], t1);
@@ -421,9 +417,8 @@ static void R_DrawLine(seg_t *line, int x1, int x2)
   p2x = FixedMul(finecosine[a2 >> ANGLETOFINESHIFT], t2);
   p2y = FixedMul(  finesine[a2 >> ANGLETOFINESHIFT], t2);
 
-  d = FixedMul(vx, viewx) + FixedMul(vy, viewy);
-  d1 = FixedMul(p1x, vx) + FixedMul(p1y, vy) - d;
-  d2 = FixedMul(p2x, vx) + FixedMul(p2y, vy) - d;
+  d1 = FixedMul(p1x, vx) + FixedMul(p1y, vy);
+  d2 = FixedMul(p2x, vx) + FixedMul(p2y, vy);
 
   lineheight = line->frontsector->ceilingheight - line->frontsector->floorheight;
   linebottom = line->frontsector->floorheight - viewz;
@@ -433,10 +428,32 @@ static void R_DrawLine(seg_t *line, int x1, int x2)
   temp = FixedDiv(finetangent[((hfov>>1) + ANG90) >> ANGLETOFINESHIFT], aspect);
   vfov = tantoangle[temp >> DBITS] << 1;
 
-  for(x=x1; x<x2; x++)
-  {
-    dest[(y >> FRACBITS) * SCREENWIDTH + x] = colormap[4];
-  }
+  // 1 unit to 1 pixel if the unit is 1 unit away
+  baseheight = FixedMul(SCREENHEIGHT << FRACBITS, finetangent[((vfov>>1) + ANG90) >> ANGLETOFINESHIFT]) << 1;
+  printf("x1: %d\n", x1);
+  printf("x2: %d\n", x2);
+
+  l1 = (SCREENHEIGHT >> 1 << FRACBITS) - FixedMul(baseheight, FixedDiv(linebottom, d1));
+  l2 = (SCREENHEIGHT >> 1 << FRACBITS) - FixedMul(baseheight, FixedDiv(linebottom, d2));
+
+  h1 = l1 - FixedMul(lineheight, FixedDiv(baseheight, d1));
+  h2 = l2 - FixedMul(lineheight, FixedDiv(baseheight, d2));
+
+  if(h1 < 0)
+    h1 = 0;
+  if(l1 >= SCREENHEIGHT<<FRACBITS)
+    l1 = (SCREENHEIGHT-1)<<FRACBITS;
+  if(h2 < 0)
+    h2 = 0;
+  if(l2 >= SCREENHEIGHT<<FRACBITS)
+    l2 = (SCREENHEIGHT-1)<<FRACBITS;
+
+  dest[0] = colormap[4];
+
+  for(x=x1, y=(h1>>FRACBITS); y<(l1>>FRACBITS); y++)
+    dest[y * SCREENWIDTH + x] = colormap[4];
+  for(x=x2-1, y=(h2>>FRACBITS); y<(l2>>FRACBITS); y++)
+    dest[y * SCREENWIDTH + x] = colormap[4];
 }
 
 static void R_AddLine (seg_t *line)
@@ -833,6 +850,7 @@ static void R_Subsector(int num)
   for(i=0, line=&segs[sub->firstline]; i<sub->numlines; i++, line++)
   {
     R_AddLine(line);
+    break;
   }
 }
 

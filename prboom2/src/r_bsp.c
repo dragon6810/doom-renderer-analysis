@@ -390,8 +390,11 @@ static void R_DrawLine(seg_t *line, int x1, int x2)
   const byte *colormap = colormaps[0];
   byte *dest = drawvars.topleft;
   fixed_t a1, a2, d1, d2, d, vx, vy;
-  fixed_t numer, denom, t;
+  fixed_t numer, denom, t1, t2;
   fixed_t p1x, p1y, p2x, p2y;
+  fixed_t lineheight, linebottom;
+  fixed_t aspect, temp;
+  angle_t hfov, vfov;
 
   vx = finecosine[viewangle >> ANGLETOFINESHIFT];
   vy = finesine[viewangle >> ANGLETOFINESHIFT];
@@ -401,10 +404,34 @@ static void R_DrawLine(seg_t *line, int x1, int x2)
 
   numer  = FixedMul(line->v1->px - viewx, -finesine[line->pangle >> ANGLETOFINESHIFT]);
   numer += FixedMul(line->v1->py - viewy, finecosine[line->pangle >> ANGLETOFINESHIFT]);
+  denom = finesine[(a1 - line->pangle) >> ANGLETOFINESHIFT];
+  // Line is parallel to angle
+  if(!denom)
+    return;
+  t1 = FixedDiv(numer, denom);
+
+  denom = finesine[(a2 - line->pangle) >> ANGLETOFINESHIFT];
+  // Line is parallel to angle
+  if(!denom)
+    return;
+  t2 = FixedDiv(numer, denom);
+  
+  p1x = FixedMul(finecosine[a1 >> ANGLETOFINESHIFT], t1);
+  p1y = FixedMul(  finesine[a1 >> ANGLETOFINESHIFT], t1);
+  p2x = FixedMul(finecosine[a2 >> ANGLETOFINESHIFT], t2);
+  p2y = FixedMul(  finesine[a2 >> ANGLETOFINESHIFT], t2);
 
   d = FixedMul(vx, viewx) + FixedMul(vy, viewy);
-  d1 = FixedMul(line->v1->px, vx) + FixedMul(line->v1->py, vy) - d;
-  d2 = FixedMul(line->v2->px, vx) + FixedMul(line->v2->py, vy) - d;
+  d1 = FixedMul(p1x, vx) + FixedMul(p1y, vy) - d;
+  d2 = FixedMul(p2x, vx) + FixedMul(p2y, vy) - d;
+
+  lineheight = line->frontsector->ceilingheight - line->frontsector->floorheight;
+  linebottom = line->frontsector->floorheight - viewz;
+
+  hfov = FieldOfView << ANGLETOFINESHIFT;
+  aspect = FixedDiv(SCREENWIDTH << FRACBITS, SCREENHEIGHT << FRACBITS);
+  temp = FixedDiv(finetangent[((hfov>>1) + ANG90) >> ANGLETOFINESHIFT], aspect);
+  vfov = tantoangle[temp >> DBITS] << 1;
 
   for(x=x1; x<x2; x++)
   {

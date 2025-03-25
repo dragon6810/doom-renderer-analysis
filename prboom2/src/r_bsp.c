@@ -445,7 +445,7 @@ static void R_DrawLine(seg_t *line, int x1, int x2)
   fixed_t numer, denom, t1, t2;
   fixed_t p1x, p1y, p2x, p2y;
   fixed_t lineheight, linebottom;
-  fixed_t aspect, temp;
+  fixed_t aspect, temp, hplane, vplane;
   fixed_t baseheight;
   angle_t hfov, vfov;
   fixed_t u1, u2;
@@ -484,11 +484,11 @@ static void R_DrawLine(seg_t *line, int x1, int x2)
 
   hfov = FieldOfView << ANGLETOFINESHIFT;
   aspect = FixedDiv(SCREENWIDTH << FRACBITS, SCREENHEIGHT << FRACBITS);
-  temp = FixedDiv(finetangent[((hfov>>1) + ANG90) >> ANGLETOFINESHIFT], aspect);
-  vfov = tantoangle[temp >> DBITS] << 1;
+  hplane = finetangent[((hfov>>1) + ANG90)>>ANGLETOFINESHIFT] << 1;
+  vplane = FixedDiv(hplane, aspect);
 
   // 1 unit to 1 pixel if the unit is 1 unit away
-  baseheight = FixedDiv(SCREENHEIGHT << FRACBITS, finetangent[((vfov>>1) + ANG90) >> ANGLETOFINESHIFT]) << 1;
+  baseheight = FixedDiv(SCREENHEIGHT << FRACBITS, vplane);
 
   l1 = (SCREENHEIGHT >> 1 << FRACBITS) - FixedMul(baseheight, FixedDiv(linebottom, d1));
   l2 = (SCREENHEIGHT >> 1 << FRACBITS) - FixedMul(baseheight, FixedDiv(linebottom, d2));
@@ -518,6 +518,8 @@ static void R_AddLine (seg_t *line)
   #endif
 
   curline = line;
+  backsector = line->backsector;
+  frontsector = line->frontsector;
 
   angle1 = R_PointToAngleEx(line->v1->px, line->v1->py);
   angle2 = R_PointToAngleEx(line->v2->px, line->v2->py);

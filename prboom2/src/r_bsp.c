@@ -381,57 +381,56 @@ static dboolean CheckClip(seg_t * seg, sector_t * frontsector, sector_t * backse
 
 static dboolean ignore_gl_range_clipping;
 
-static void R_DrawLineCol(seg_t *line, int x, fixed_t l, fixed_t h, fixed_t d1, fixed_t d2, int x1, int x2)
+static void R_DrawLineColLoop(seg_t *line, fixed_t l1, fixed_t h1, fixed_t l2, fixed_t h2, fixed_t d1, fixed_t d2, int x1, int x2, fixed_t u1, fixed_t u2)
 {
-  int y;
+  int x, y;
 
   const byte *colormap = colormaps[0];
   byte *dest = drawvars.topleft;
 
-  fixed_t linelen;
-  fixed_t u, v, vstep;
-  fixed_t px, py;
-  angle_t angle;
-  fixed_t numer, denom, t;
+  fixed_t worldheightspan;
+  fixed_t alpha, numer, denom;
+  fixed_t screenleftheight;
+  fixed_t u, v, vstep, alphastep;
+  fixed_t lstep, hstep;
+  fixed_t l, h;
   int il, ih;
   const rpatch_t *texpatch;
   const byte *source;
 
-  angle = xtoviewangle[x] + viewangle;
-  linelen  = FixedMul(line->v2->px - line->v1->px, finecosine[line->angle>>ANGLETOFINESHIFT]);
-  linelen += FixedMul(line->v2->py - line->v1->py,   finesine[line->angle>>ANGLETOFINESHIFT]);
-
-  numer  = FixedMul(line->v1->px - viewx, -finesine[line->pangle >> ANGLETOFINESHIFT]);
-  numer += FixedMul(line->v1->py - viewy, finecosine[line->pangle >> ANGLETOFINESHIFT]);
-  
-  denom = finesine[(angle - line->pangle) >> ANGLETOFINESHIFT];
-  t = FixedDiv(numer, denom);
-
-  px = FixedMul(finecosine[angle>>ANGLETOFINESHIFT], t) + viewx - line->v1->px;
-  py = FixedMul(finesine[angle>>ANGLETOFINESHIFT], t) + viewy - line->v1->py;
-
-  u = FixedMul(px, finecosine[line->pangle>>ANGLETOFINESHIFT]) + FixedMul(py, finesine[line->pangle>>ANGLETOFINESHIFT]);
-  v = 0;
-
-  vstep = FixedDiv(line->frontsector->ceilingheight - line->frontsector->floorheight, l - h);
-
-  il = l >> FRACBITS;
-  ih = h >> FRACBITS;
-
-  if(ih < 0)
-  {
-    v += FixedMul(-h, vstep);
-    ih = 0;
-  }
-  if(il >= SCREENHEIGHT)
-    il = SCREENHEIGHT-1;
-
   texpatch = R_TextureCompositePatchByNum(line->sidedef->midtexture);
-  source = R_GetTextureColumn(texpatch, u >> FRACBITS);
+  worldheightspan = line->frontsector->ceilingheight - line->frontsector->floorheight;
+  screenleftheight = l1 - h1;
 
-  for(y=ih; y<=il; y++, v+=vstep)
+  lstep = FixedDiv(l2 - l1, (x2 - x1) << FRACBITS);
+  hstep = FixedDiv(h2 - h1, (x2 - x1) << FRACBITS);
+  alphastep = FixedDiv(FRACUNIT, (x2-x1) << FRACBITS);
+  for(x=x1, l=l1, h=h1, alpha=0; x<x2; x++, l+=lstep, h+=hstep, alpha+=alphastep)
   {
-    dest[y * SCREENWIDTH + x] = colormap[source[v>>FRACBITS]];
+    numer = FixedMul(FRACUNIT - alpha, FixedDiv(u1, d1)) + FixedMul(alpha, FixedDiv(u2, d2));
+    denom = FixedMul(FRACUNIT - alpha, FixedDiv(FRACUNIT, d1)) + FixedMul(alpha, FixedDiv(FRACUNIT, d2));
+    u = FixedDiv(numer, denom);
+    v = 0;
+
+    vstep = FixedDiv(worldheightspan, l - h);
+
+    il = l >> FRACBITS;
+    ih = h >> FRACBITS;
+
+    if(ih < 0)
+    {
+      v += FixedMul(-h, vstep);
+      ih = 0;
+    }
+    if(il >= SCREENHEIGHT)
+      il = SCREENHEIGHT-1;
+
+    source = R_GetTextureColumn(texpatch, u >> FRACBITS);
+
+    for(y=ih; y<=il; y++, v+=vstep)
+    {
+      dest[y * SCREENWIDTH + x] = colormap[source[v>>FRACBITS]];
+    }
   }
 }
 
@@ -449,6 +448,7 @@ static void R_DrawLine(seg_t *line, int x1, int x2)
   fixed_t aspect, temp;
   fixed_t baseheight;
   angle_t hfov, vfov;
+  fixed_t u1, u2;
   fixed_t l1, h1, l2, h2, lstep, hstep, l, h;
   int il, ih;
 
@@ -471,6 +471,11 @@ static void R_DrawLine(seg_t *line, int x1, int x2)
   p2x = FixedMul(finecosine[a2 >> ANGLETOFINESHIFT], t2);
   p2y = FixedMul(  finesine[a2 >> ANGLETOFINESHIFT], t2);
 
+  u1  = FixedMul(finecosine[line->pangle>>ANGLETOFINESHIFT], p1x+viewx-line->v1->px);
+  u1 += FixedMul(  finesine[line->pangle>>ANGLETOFINESHIFT], p1y+viewy-line->v1->py);
+  u2  = FixedMul(finecosine[line->pangle>>ANGLETOFINESHIFT], p2x+viewx-line->v1->px);
+  u2 += FixedMul(  finesine[line->pangle>>ANGLETOFINESHIFT], p2y+viewy-line->v1->py);
+
   d1 = FixedMul(p1x, vx) + FixedMul(p1y, vy);
   d2 = FixedMul(p2x, vx) + FixedMul(p2y, vy);
 
@@ -483,7 +488,7 @@ static void R_DrawLine(seg_t *line, int x1, int x2)
   vfov = tantoangle[temp >> DBITS] << 1;
 
   // 1 unit to 1 pixel if the unit is 1 unit away
-  baseheight = FixedMul(SCREENHEIGHT << FRACBITS, finetangent[((vfov>>1) + ANG90) >> ANGLETOFINESHIFT]) << 1;
+  baseheight = FixedDiv(SCREENHEIGHT << FRACBITS, finetangent[((vfov>>1) + ANG90) >> ANGLETOFINESHIFT]) << 1;
 
   l1 = (SCREENHEIGHT >> 1 << FRACBITS) - FixedMul(baseheight, FixedDiv(linebottom, d1));
   l2 = (SCREENHEIGHT >> 1 << FRACBITS) - FixedMul(baseheight, FixedDiv(linebottom, d2));
@@ -494,12 +499,7 @@ static void R_DrawLine(seg_t *line, int x1, int x2)
   lstep = FixedDiv(l2 - l1, (x2 - x1) << FRACBITS);
   hstep = FixedDiv(h2 - h1, (x2 - x1) << FRACBITS);
 
-  dest[0] = colormap[4];
-
-  for(x=x1, l=l1, h=h1; x<x2; x++, l+=lstep, h+=hstep)
-  {
-    R_DrawLineCol(line, x, l, h, d1, d2, x1, x2);
-  }
+  R_DrawLineColLoop(line, l1, h1, l2, h2, d1, d2, x1, x2, u1, u2);
 }
 
 static void R_AddLine (seg_t *line)
@@ -893,10 +893,9 @@ static void R_Subsector(int num)
 
   count = sub->numlines;
   line = &segs[sub->firstline];
-  for(i=2, line=&segs[sub->firstline+2]; i<sub->numlines; i++, line++)
+  for(i=0, line=&segs[sub->firstline]; i<sub->numlines; i++, line++)
   {
     R_AddLine(line);
-    break;
   }
 }
 

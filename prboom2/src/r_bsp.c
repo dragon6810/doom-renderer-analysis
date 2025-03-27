@@ -917,7 +917,14 @@ static void R_Subsector(int num)
 
 void R_RenderBSPNode(int bspnum)
 {
+  int i;
+
   //R_Subsector(76);
+
+  for(i=0; i<numsubsectors; i++)
+    R_Subsector(i);
+
+  return;
 
   while (!(bspnum & NF_SUBSECTOR))  // Found a subsector?
   {

@@ -5,10 +5,11 @@
 
 seg_t *curline;
 subsector_t *frontsector, *backsector;
+fixed_t rw_y1, rw_h1, rw_ystep, rw_hstep;
 
-static void R_dvDrawLineColLoop(seg_t *line, fixed_t l1, fixed_t h1, fixed_t l2, fixed_t h2, fixed_t d1, fixed_t d2, int x1, int x2, fixed_t u1, fixed_t u2)
+static void R_dvDrawLineColLoop(seg_t *line, fixed_t d1, fixed_t d2, int x1, int x2, fixed_t u1, fixed_t u2)
 {
-  int x, y;
+  int i, x;
 
   const byte *colormap = colormaps[0];
   byte *dest = drawvars.topleft;
@@ -17,34 +18,30 @@ static void R_dvDrawLineColLoop(seg_t *line, fixed_t l1, fixed_t h1, fixed_t l2,
   fixed_t alpha, numer, denom;
   fixed_t screenleftheight;
   fixed_t u, v, vstep, alphastep;
-  fixed_t lstep, hstep;
-  fixed_t l, h;
+  fixed_t y, h;
   int il, ih;
   const rpatch_t *texpatch;
   const byte *source;
 
   texpatch = R_TextureCompositePatchByNum(line->sidedef->midtexture);
   worldheightspan = line->frontsector->ceilingheight - line->frontsector->floorheight;
-  screenleftheight = l1 - h1;
-
-  lstep = FixedDiv(l2 - l1, (x2 - x1) << FRACBITS);
-  hstep = FixedDiv(h2 - h1, (x2 - x1) << FRACBITS);
+  
   alphastep = FixedDiv(FRACUNIT, (x2-x1) << FRACBITS);
-  for(x=x1, l=l1, h=h1, alpha=0; x<x2; x++, l+=lstep, h+=hstep, alpha+=alphastep)
+  for(x=x1, y=rw_y1, h=rw_h1, alpha=0; x<x2; x++, y+=rw_ystep, h+=rw_hstep, alpha+=alphastep)
   {
     numer = FixedMul(FRACUNIT - alpha, FixedDiv(u1, d1)) + FixedMul(alpha, FixedDiv(u2, d2));
     denom = FixedMul(FRACUNIT - alpha, FixedDiv(FRACUNIT, d1)) + FixedMul(alpha, FixedDiv(FRACUNIT, d2));
     u = FixedDiv(numer, denom);
     v = 0;
 
-    vstep = FixedDiv(worldheightspan, l - h);
+    vstep = FixedDiv(worldheightspan, h);
 
-    il = l >> FRACBITS;
-    ih = h >> FRACBITS;
+    il = (y+h) >> FRACBITS;
+    ih = y >> FRACBITS;
 
     if(ih < 0)
     {
-      v += FixedMul(-h, vstep);
+      v += FixedMul(-y, vstep);
       ih = 0;
     }
     if(il >= SCREENHEIGHT)
@@ -52,9 +49,9 @@ static void R_dvDrawLineColLoop(seg_t *line, fixed_t l1, fixed_t h1, fixed_t l2,
 
     source = R_GetTextureColumn(texpatch, u >> FRACBITS);
 
-    for(y=ih; y<=il; y++, v+=vstep)
+    for(i=ih; i<=il; i++, v+=vstep)
     {
-      dest[y * SCREENWIDTH + x] = colormap[source[v>>FRACBITS]];
+      dest[i * SCREENWIDTH + x] = colormap[source[v>>FRACBITS]];
     }
   }
 }
@@ -124,7 +121,12 @@ static void R_dvDrawLine(seg_t *line, int x1, int x2)
   lstep = FixedDiv(l2 - l1, (x2 - x1) << FRACBITS);
   hstep = FixedDiv(h2 - h1, (x2 - x1) << FRACBITS);
 
-  R_dvDrawLineColLoop(line, l1, h1, l2, h2, d1, d2, x1, x2, u1, u2);
+  rw_y1 = h1;
+  rw_h1 = l1 - h1;
+  rw_ystep = hstep;
+  rw_hstep = FixedDiv((l2 - h2) - (l1 - h1), (x2 - x1) << FRACBITS);
+
+  R_dvDrawLineColLoop(line, d1, d2, x1, x2, u1, u2);
 }
 
 static void R_dvAddLine (seg_t *line)
@@ -183,19 +185,20 @@ static void R_dvAddLine (seg_t *line)
       angle2 = 0-clipangle;
     }
 
-  // The seg is in the view range,
-  // but not necessarily visible.
+    // The seg is in the view range,
+    // but not necessarily visible.
 
-  angle1 = (angle1+ANG90)>>ANGLETOFINESHIFT;
-  angle2 = (angle2+ANG90)>>ANGLETOFINESHIFT;
+    angle1 = (angle1+ANG90)>>ANGLETOFINESHIFT;
+    angle2 = (angle2+ANG90)>>ANGLETOFINESHIFT;
 
-  x1 = viewangletox[angle1];
-  x2 = viewangletox[angle2];
+    x1 = viewangletox[angle1];
+    x2 = viewangletox[angle2];
 
-  if (x1 >= x2)
-    return;
+    if (x1 >= x2)
+        return;
 
-  R_dvDrawLine(line, x1, x2);
+    if(line->sidedef->midtexture)
+        R_dvDrawLine(line, x1, x2);
 }
 
 

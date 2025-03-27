@@ -373,6 +373,8 @@ set(COMMON_SRC
     r_data.c
     r_data.h
     r_defs.h
+    r_doomvid.c
+    r_doomvid.h
     r_draw.c
     r_draw.h
     r_fps.c

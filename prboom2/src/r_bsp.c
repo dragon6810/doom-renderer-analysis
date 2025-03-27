@@ -41,6 +41,7 @@
 #include "r_bsp.h" // cph - sanity checking
 #include "v_video.h"
 #include "lprintf.h"
+#include "r_doomvid.h"
 
 // Turned off because it causes regressions on some maps (issue #256).  Fixing
 // this requires doing bleed with subsector granularity.
@@ -872,17 +873,22 @@ static void R_Subsector(int num)
   int         floorlightlevel;      // killough 3/16/98: set floor lightlevel
   int         ceilinglightlevel;    // killough 4/11/98
 
+#define RANGECHECK
 #ifdef RANGECHECK
   if (num>=numsubsectors)
     I_Error ("R_Subsector: ss %i with numss = %i", num, numsubsectors);
 #endif
 
-  #if 1
+  #if 0
     if(num != 76)
       return;
   #endif
 
   sub = &subsectors[num];
+
+  r_dvRenderSubsector(sub);
+  return;
+
   currentsubsectornum = num;
 
   if (V_IsSoftwareMode() || sub->sector->gl_validcount != validcount)
@@ -911,26 +917,27 @@ static void R_Subsector(int num)
 
 void R_RenderBSPNode(int bspnum)
 {
-  R_Subsector(76);
+  //R_Subsector(76);
 
   while (!(bspnum & NF_SUBSECTOR))  // Found a subsector?
-    {
-      const node_t *bsp = &nodes[bspnum];
+  {
+    const node_t *bsp = &nodes[bspnum];
 
-      // Decide which side the view point is on.
-      int side = R_PointOnSide(viewx, viewy, bsp);
-      // Recursively divide front space.
-      R_RenderBSPNode(bsp->children[side]);
+    // Decide which side the view point is on.
+    int side = R_PointOnSide(viewx, viewy, bsp);
+    // Recursively divide front space.
+    R_RenderBSPNode(bsp->children[side]);
 
-      // Possibly divide back space.
+    // Possibly divide back space.
 
-      if (!R_CheckBBox(bsp->bbox[side^1]))
-        return;
+    if (!R_CheckBBox(bsp->bbox[side^1]))
+      return;
 
-      bspnum = bsp->children[side^1];
-    }
+    bspnum = bsp->children[side^1];
+  }
+  R_Subsector(bspnum & ~NF_SUBSECTOR);
   // e6y: support for extended nodes
-  R_Subsector(bspnum == -1 ? 0 : bspnum & ~NF_SUBSECTOR);
+  // R_Subsector(bspnum == -1 ? 0 : bspnum & ~NF_SUBSECTOR);
 }
 
 void R_ForceRenderPolyObjs(void)
